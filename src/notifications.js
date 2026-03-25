@@ -13,7 +13,7 @@ import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import { doc, updateDoc }                    from "firebase/firestore";
 import { db }                                from "./firebase";
 
-const VAPID_KEY = "REPLACE_WITH_YOUR_VAPID_KEY_FROM_FIREBASE_CONSOLE";
+BL9yICPhIf0AjkiXmZF2HgC-JsdanxZYlLuvQVGK3iWH2wosybYw_x_YfEhRmj8k6Ktoyx8oRTqg6YsPh-w_tFs
 
 // ── Request permission and save FCM token to user's Firestore record ──
 export async function requestNotificationPermission(uid) {
