@@ -1,0 +1,90 @@
+// firestore.rules
+// Deploy with: firebase deploy --only firestore:rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ──────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isNotBlocked() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.blocked == false;
+    }
+
+    // ── Users ─────────────────────────────────────────────────
+    // Admins can read all users. Users can read/update their own record only.
+    match /users/{userId} {
+      allow read:   if isAdmin() || request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── Events ────────────────────────────────────────────────
+    // Anyone can read. Only admins can write.
+    match /events/{eventId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    // ── Announcements ─────────────────────────────────────────
+    // Anyone can read. Only admins can write.
+    match /announcements/{annId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    // ── Resources ─────────────────────────────────────────────
+    // Anyone can read. Only admins can write.
+    match /resources/{resId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    // ── Chat ──────────────────────────────────────────────────
+    // Only authenticated, non-blocked users can read and write.
+    match /chat/{msgId} {
+      allow read:   if isSignedIn() && isNotBlocked();
+      allow create: if isSignedIn() && isNotBlocked()
+                    && request.resource.data.senderId == request.auth.uid;
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    // ── Photos ────────────────────────────────────────────────
+    // Anyone can read APPROVED photos. Authenticated non-blocked users can submit (pending).
+    // Only admins can approve, reject, or delete.
+    match /photos/{photoId} {
+      allow read:   if resource.data.status == 'approved' || isAdmin();
+      allow create: if isSignedIn() && isNotBlocked()
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.uploadedBy == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── Flagged Photos ────────────────────────────────────────
+    // Anyone signed in can flag. Only admins can read the flag queue.
+    match /flaggedPhotos/{flagId} {
+      allow read:   if isAdmin();
+      allow create: if isSignedIn() && isNotBlocked();
+      allow delete: if isAdmin();
+    }
+
+    // ── Sponsors ──────────────────────────────────────────────
+    // Anyone can read. Only admins can write.
+    match /sponsors/{sponsorId} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+  }
+}
