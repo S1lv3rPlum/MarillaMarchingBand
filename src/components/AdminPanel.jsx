@@ -133,26 +133,17 @@ function PendingPhotosTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { query, where } = require("firebase/firestore");
-    // Note: import these at top of file in production — shown inline for clarity
-    const { onSnapshot: snap } = require("firebase/firestore");
-    setLoading(false);
-  }, []);
-
-  // Real implementation using modular SDK
-  useEffect(() => {
-    const { query, where, orderBy } = window._firestore || {};
-    const q = window._firestoreQuery
-      ? window._firestoreQuery(collection(db, "photos"), where("status", "==", "pending"))
-      : null;
-    if (!q) {
-      // Fallback: direct onSnapshot
-      const unsub = onSnapshot(collection(db, "photos"), snap => {
-        setPhotos(snap.docs.filter(d => d.data().status === "pending").map(d => ({ id: d.id, ...d.data() })));
+    const unsub = onSnapshot(
+      query(
+        collection(db, "photos"),
+        where("status", "==", "pending")
+      ),
+      snap => {
+        setPhotos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
         setLoading(false);
-      });
-      return unsub;
-    }
+      }
+    );
+    return unsub;
   }, []);
 
   const approve = async (id) => await updateDoc(doc(db, "photos", id), { status:"approved" });
